@@ -1,7 +1,7 @@
 [![Contentstack Logo](/contentstack.png)](https://www.contentstack.com/)
 
 
-# Build a Starter Website with PHP, Laravel and Contentstack
+# Build a Starter Website with PHP Using GraphQL, Laravel and Contentstack
 
 About Contentstack: Contentstack is a headless CMS with an API-first approach that puts content at the centre. It is designed to simplify the process of publication by separating code from content.
 
