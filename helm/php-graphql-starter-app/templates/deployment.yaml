@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}
+  labels:
+    {{- include "php-graphql-starter-app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "php-graphql-starter-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "php-graphql-starter-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      #serviceAccountName: {{ include "php-graphql-starter-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+       - name: {{ .Values.initContainer.name }}
+         image: {{ .Values.initContainer.image }}
+         command: ['sh', '-c', 'cp /tmp/.env /var/www/html/.env && chown {{ .Values.user }}:{{ .Values.user }} /var/www/html/ -R ']
+         volumeMounts:
+           - name: "{{ .Values.tempVolume.name }}"
+             mountPath: "{{ .Values.tempVolume.mountPath }}"
+             subPath: "{{ .Values.tempVolume.subPath }}"
+           - name: "{{ .Values.volume.name }}"
+             mountPath: "{{ .Values.volume.mountPath }}"
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ['sh', '-c', 'composer update && php artisan key:generate && php artisan serve --host=0.0.0.0 --port=8000']
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ int .Values.httpPort }}
+              protocol: TCP              
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: {{ .Values.volume.name }}
+            mountPath: "{{ .Values.volume.mountPath }}/.env"
+            subPath: {{ .Values.volume.subPath }}
+      volumes:
+      - name: {{ .Values.volume.name }}
+        emptyDir: {}
+      - name: {{ .Values.tempVolume.name }}
+        secret:
+          defaultMode: {{ .Values.secretName.defaultMode }}
+          secretName: {{ .Values.secretName.name }} 
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
