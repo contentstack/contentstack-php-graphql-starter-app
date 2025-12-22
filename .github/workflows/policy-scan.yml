@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@master
       - name: Checks for License file
         run: |
-          expected_license_files=("LICENSE" "LICENSE.txt" "LICENSE.md" "License.txt")
+          expected_license_files=("LICENSE" "LICENSE.txt" "LICENSE.md" "License.txt" "license.txt")
           license_file_found=false
           current_year=$(date +"%Y")
 
