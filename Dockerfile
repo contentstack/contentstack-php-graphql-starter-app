@@ -1,6 +1,8 @@
 FROM php:8.2-apache
 
-RUN apt-get update && apt-get upgrade && apt-get install -y --no-install-recommends \
+# Update all packages to fix security vulnerabilities
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
     libicu-dev \
     libzip-dev \
     unzip \
