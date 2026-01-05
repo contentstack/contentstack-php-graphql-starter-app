@@ -1,29 +1,43 @@
-FROM php:8.0.2-apache
+FROM php:8.2-apache
 
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install --fix-missing -y libpq-dev \
-    && apt-get install --no-install-recommends -y libpq-dev \
-    && apt-get install -y libxml2-dev libbz2-dev zlib1g-dev \ 
-    && apt-get -y install libsqlite3-dev libsqlite3-0 mariadb-client curl exif ftp \
-    && apt-get -y install --fix-missing zip unzip
+# Update all packages to fix security vulnerabilities
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+    libicu-dev \
+    libzip-dev \
+    unzip \
+    git \
+    && docker-php-ext-install intl zip \
+    && a2enmod rewrite headers \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install intl 
+# Point Apache to the Laravel public folder
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# Composer
-RUN curl -sS https://getcomposer.org/installer | php \
-    && mv composer.phar /usr/local/bin/composer \
-    && chmod +x /usr/local/bin/composer \
-    && composer self-update
+# Composer (secure)
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
-RUN apt-get clean \
-    && rm -r /var/lib/apt/lists/*
+WORKDIR /var/www/html
 
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf    
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock ./
+
+# Install dependencies (skip scripts to avoid Laravel initialization issues)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Copy the rest of the application
+COPY . .
+
+# Run composer scripts now that all files are in place
+RUN composer dump-autoload --optimize --no-interaction
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
 
 USER www-data
-COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
+EXPOSE 80
 
-WORKDIR /var/www/html/
-
-COPY --chown=www-data:www-data . . 
+CMD ["apache2-foreground"]
