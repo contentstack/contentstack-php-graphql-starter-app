@@ -1,20 +1,24 @@
-FROM php:8.2-apache
+FROM php:8.5.2RC1-zts-alpine3.22 AS builder
 
-# Update all packages to fix security vulnerabilities
-RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
-    libicu-dev \
+# Install build dependencies
+RUN apk update && apk upgrade \
+    && apk add --no-cache \
+    icu-dev \
     libzip-dev \
+    zlib-dev \
     unzip \
     git \
+    autoconf \
+    g++ \
+    make \
     && docker-php-ext-install intl zip \
-    && a2enmod rewrite headers \
-    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Point Apache to the Laravel public folder
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+    && apk del --purge \
+    icu-dev \
+    libzip-dev \
+    zlib-dev \
+    autoconf \
+    g++ \
+    make
 
 # Composer (secure)
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
@@ -27,11 +31,28 @@ COPY composer.json composer.lock ./
 # Install dependencies (skip scripts to avoid Laravel initialization issues)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
+# Production stage
+FROM php:8.5.2RC1-zts-alpine3.22
+
+# Update packages and install runtime dependencies
+RUN apk update && apk upgrade \
+    && apk add --no-cache \
+    icu-libs \
+    libzip \
+    zlib \
+    && rm -rf /var/cache/apk/*
+
+# Copy PHP extensions from builder
+COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+
+WORKDIR /var/www/html
+
+# Copy vendor directory from builder
+COPY --from=builder /var/www/html/vendor ./vendor
+
 # Copy the rest of the application
 COPY . .
-
-# Run composer scripts now that all files are in place
-RUN composer dump-autoload --optimize --no-interaction
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -40,4 +61,5 @@ RUN chown -R www-data:www-data /var/www/html \
 USER www-data
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+# Use PHP built-in server for testing (can be replaced with nginx+php-fpm in production)
+CMD ["php", "-S", "0.0.0.0:80", "-t", "/var/www/html/public"]
