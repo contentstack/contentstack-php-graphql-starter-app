@@ -132,16 +132,16 @@
         },
         {
             "name": "contentstack/contentstack",
-            "version": "v2.4.1",
+            "version": "v2.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/contentstack/contentstack-php.git",
-                "reference": "2f1ae789271339baf1a2b177d8576c7c0b500700"
+                "reference": "f4afec204ea05b191a2ad06fe590f8eb514738a5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/contentstack/contentstack-php/zipball/2f1ae789271339baf1a2b177d8576c7c0b500700",
-                "reference": "2f1ae789271339baf1a2b177d8576c7c0b500700",
+                "url": "https://api.github.com/repos/contentstack/contentstack-php/zipball/f4afec204ea05b191a2ad06fe590f8eb514738a5",
+                "reference": "f4afec204ea05b191a2ad06fe590f8eb514738a5",
                 "shasum": ""
             },
             "require": {
@@ -185,9 +185,9 @@
             ],
             "support": {
                 "issues": "https://github.com/contentstack/contentstack-php/issues",
-                "source": "https://github.com/contentstack/contentstack-php/tree/v2.4.1"
+                "source": "https://github.com/contentstack/contentstack-php/tree/v2.4.2"
             },
-            "time": "2025-11-12T11:10:16+00:00"
+            "time": "2026-01-05T06:32:25+00:00"
         },
         {
             "name": "contentstack/utils",
